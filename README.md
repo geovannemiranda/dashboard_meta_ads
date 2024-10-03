@@ -1,108 +1,27 @@
-import streamlit as st
-import requests
-import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder, AgGridTheme
-import plotly.express as px
+Descrição do Projeto:
 
-# Configuração do tema
-st.set_page_config(page_title="Dashboard de Anúncios", layout="wide")
+Este projeto consiste em um dashboard interativo para visualização de dados de anúncios gerenciados na plataforma Meta Ads (Facebook Ads). O objetivo é facilitar o acesso e a análise dos dados de desempenho das campanhas, permitindo que os usuários visualizem informações cruciais, como cliques, impressões e gastos.
 
-# Cabeçalho com logo
-st.image("logo.png", width=200)  # Verifique o caminho da imagem
-st.title("Dashboard de Anúncios - Meta Ads")
+Ferramentas Utilizadas:
 
-# Campos para inserir Token e ID da conta
-token = st.text_input("Insira seu Token de Acesso:")
-account_id = st.text_input("Insira o ID da Conta:")
+Streamlit: Uma biblioteca Python que permite a criação rápida de aplicativos web interativos. Utilizei o Streamlit para construir a interface do dashboard, tornando a interação do usuário simples e intuitiva.
 
-# Função para criar uma tabela interativa
-def create_interactive_table(df):
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_pagination(paginationAutoPageSize=True)  # Adicionar paginação
-    gb.configure_side_bar()  # Barra lateral para filtros
-    gb.configure_default_column(editable=False)  # Colunas não editáveis
-    grid_options = gb.build()
-    AgGrid(df, gridOptions=grid_options, height=300, theme=AgGridTheme.STREAMLIT)  # Usando tema válido
+FastAPI: Uma framework de alto desempenho para construir APIs com Python. Utilizei o FastAPI para criar a API que se conecta à Graph API do Facebook, permitindo a obtenção de dados de anúncios de forma eficiente.
 
-# Botão para confirmar as credenciais
-if st.button("Conectar à Conta"):
-    if token and account_id:
-        st.success(f"Conectado à conta {account_id}")
+Pandas: Uma biblioteca para análise de dados em Python. Usei o Pandas para manipular e estruturar os dados recebidos da API, organizando as informações em um formato que pode ser facilmente exibido no dashboard.
 
-        # Fazer requisição para a API
-        response = requests.get(f"http://fastapi:8000/get_ad_data?token={token}&account_id={account_id}")
+Plotly: Uma biblioteca de visualização de dados que permite a criação de gráficos interativos. Usei o Plotly para gerar gráficos que ilustram o desempenho das campanhas de anúncios, como o número de cliques por campanha.
 
-        if response.status_code == 200:
-            ad_data = response.json()
+Ag-Grid: Uma biblioteca para exibir tabelas interativas no Streamlit. Utilizei o Ag-Grid para apresentar os dados em uma tabela dinâmica, permitindo que os usuários filtrem e paginem os dados de maneira conveniente.
 
-            if isinstance(ad_data, dict) and "data" in ad_data:
-                st.subheader("Dados das Campanhas de Anúncios")
+Docker: Uma plataforma que permite empacotar aplicações em contêineres. Utilizei o Docker para garantir que o projeto seja facilmente implantável em diferentes ambientes, isolando as dependências e configurações necessárias.
 
-                # Lista para armazenar dados dos anúncios
-                ads_list = []
+Heroku: Um serviço de plataforma como serviço (PaaS) que facilita a implantação e gerenciamento de aplicativos. Utilizei o Heroku para hospedar o dashboard, permitindo que os usuários acessem a aplicação online.
 
-                # Iterar sobre os anúncios e extrair os dados de insights
-                for ad in ad_data["data"]:
-                    insights = ad.get('insights', {}).get('data', [])
-                    if insights:
-                        for insight in insights:
-                            ads_list.append({
-                                "Nome do Anúncio": ad['name'],
-                                "Cliques": insight.get('clicks', 0),
-                                "Impressões": insight.get('impressions', 0),
-                                "Valor Gasto (R$)": insight.get('spend', 0),
-                                "CTR (%)": insight.get('ctr', 0),
-                                "CPC (R$)": insight.get('cpc', 0),
-                                "Conversões": insight.get('conversions', 0)
-                            })
+Desafios Enfrentados:
 
-                # Verificar se existem dados de anúncios
-                if ads_list:
-                    # Criar DataFrame com os dados dos anúncios
-                    df = pd.DataFrame(ads_list)
+Durante o desenvolvimento, enfrentei diversos desafios, como a integração com a API do Facebook, a manipulação de dados e a criação de gráficos interativos. Com o tempo e a pesquisa, consegui superar esses obstáculos e criar uma solução coesa.
 
-                    # Exibir o DataFrame em uma tabela interativa
-                    st.subheader("Tabela de Desempenho dos Anúncios")
-                    create_interactive_table(df)
+Objetivos Futuros:
 
-                    # Exibir gráfico de cliques por campanha
-                    fig = px.bar(df, x='Nome do Anúncio', y='Cliques', title='Cliques por Campanha')
-                    st.plotly_chart(fig)
-
-                else:
-                    st.write("Nenhum dado de insights disponível para os anúncios.")
-            else:
-                st.error("Nenhum dado encontrado para esta conta.")
-        else:
-            st.error("Erro ao buscar dados da conta.")
-    else:
-        st.warning("Por favor, insira o Token e o ID da conta.")
-
-from fastapi import FastAPI, Query
-
-app = FastAPI()
-
-@app.get("/get_ad_data")
-def get_ad_data(token: str = Query(...), account_id: str = Query(...)):
-    # Definindo a URL corretamente
-    url = f"https://graph.facebook.com/v14.0/act_{account_id}/ads"
-    
-    params = {
-        "access_token": token,
-        "fields": "id, name, insights{clicks,impressions,spend,ctr,cpc,conversions}"
-    }
-    
-    print(f"Requesting data for account_id: {account_id} with token: {token}")
-
-    # Fazendo a requisição HTTP para a API do Facebook
-    response = requests.get(url, params=params)
-    
-    if response.status_code == 200:
-        # Retorna os dados dos anúncios se a requisição foi bem-sucedida
-        print("Data received successfully:", response.json())
-        return response.json()
-    
-    else:
-        # Em caso de erro, imprime o status e a mensagem de erro
-        print(f"Erro: {response.status_code}, {response.text}")
-        return {"error": "Erro ao buscar dados. Verifique o token e ID."}
+Para o futuro, planejo implementar novas funcionalidades, como relatórios automatizados e alertas sobre o desempenho das campanhas. Também pretendo melhorar a estética do dashboard para torná-lo ainda mais atraente e fácil de usar.
