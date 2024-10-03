@@ -1,0 +1,10 @@
+AppData/ 
+*.log
+*.tmp
+*.cache
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+*.class
+*.jar

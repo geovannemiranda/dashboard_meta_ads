@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+streamlit
+requests
+plotly
+streamlit-aggrid
